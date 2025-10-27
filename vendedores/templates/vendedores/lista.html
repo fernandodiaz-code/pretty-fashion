@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}Lista de Vendedores{% endblock %}
+
+{% block content %}
+<h2 class="text-white mb-4">Lista de Vendedores</h2>
+
+<table class="table table-light table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Apellido</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for vendedor in vendedores %}
+        <tr>
+            <td>{{ vendedor.0 }}</td>
+            <td>{{ vendedor.1 }}</td>
+            <td>{{ vendedor.2 }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

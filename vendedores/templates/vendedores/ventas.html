@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Ventas por Rango de Fechas{% endblock %}
+
+{% block content %}
+<h2 class="text-white mb-4">Consultar Ventas</h2>
+
+<form method="POST" class="mb-4">
+    {% csrf_token %}
+    <div class="row g-2">
+        <div class="col-md-4">
+            <select name="id_vendedor" class="form-select" required>
+                <option value="">Seleccione un vendedor</option>
+                {% for v in vendedores %}
+                    <option value="{{ v.0 }}" {% if v.0|stringformat:"s" == id_vendedor %}selected{% endif %}>
+                        {{ v.1 }} {{ v.2 }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <input type="date" name="fecha_inicio" class="form-control" value="{{ fecha_inicio }}" required>
+        </div>
+        <div class="col-md-3">
+            <input type="date" name="fecha_fin" class="form-control" value="{{ fecha_fin }}" required>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-warning w-100 fw-bold">Consultar</button>
+        </div>
+    </div>
+</form>
+
+{% if total_ventas != None %}
+    <div class="alert alert-success mt-4 fw-bold">
+        Total vendido: ${{ total_ventas }}
+    </div>
+{% elif fecha_inicio and fecha_fin and id_vendedor %}
+    <div class="alert alert-warning mt-3">No hubo ventas en ese rango de fechas.</div>
+{% endif %}
+
+{% if mensaje %}
+    <div class="alert alert-danger mt-3">{{ mensaje }}</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends 'base.html' %} 
+
+{% block title %}Gestión de Inventario{% endblock %}
+
+{% block content %}
+<h2 class="text-white mb-4">Gestión de Inventario</h2>
+
+<div class="d-flex justify-content-center gap-4 flex-wrap">
+    <div class="card text-white p-4 rounded" style="width: 220px; background-color: #4B0082;">
+        <h5 class="mb-3 text-center">Consultar<br>stock disponible</h5>
+        <a href="{% url 'consultar_inventario' %}" class="btn btn-warning w-100 fw-bold">Ingresar</a>
+    </div>
+
+    <div class="card text-white p-4 rounded" style="width: 220px; background-color: #4B0082;">
+        <h5 class="mb-3 text-center">Agregar<br>artículos</h5>
+        <a href="{% url 'ingresar_stock' %}" class="btn btn-warning w-100 fw-bold">Ingresar</a>
+    </div>
+</div>
+{% endblock %}

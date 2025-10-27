@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-white text-2xl font-bold mb-6">Notas de Crédito Emitidas</h2>
+
+    <form method="post" class="mb-6">
+        {% csrf_token %}
+        <div class="mb-4">
+            <label for="fecha_inicio" class="block text-white font-semibold">Desde:</label>
+            <input type="date" name="fecha_inicio" id="fecha_inicio" required class="rounded w-full p-2">
+        </div>
+        <div class="mb-4">
+            <label for="fecha_fin" class="block text-white font-semibold">Hasta:</label>
+            <input type="date" name="fecha_fin" id="fecha_fin" required class="rounded w-full p-2">
+        </div>
+        <button type="submit" class="bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-2 px-4 rounded">Buscar</button>
+    </form>
+
+    {% if datos %}
+    <div class="bg-white p-4 rounded text-black">
+        <table class="min-w-full border text-black">
+            <thead class="bg-gray-200">
+                <tr>
+                    <th class="p-2 border">ID Nota</th>
+                    <th class="p-2 border">Fecha</th>
+                    <th class="p-2 border">Motivo</th>
+                    <th class="p-2 border">Monto Devuelto</th>
+                    <th class="p-2 border">RUT Cliente</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for nota in datos %}
+                <tr>
+                    <td class="p-2 border">{{ nota.0 }}</td>
+                    <td class="p-2 border">{{ nota.1 }}</td>
+                    <td class="p-2 border">{{ nota.2 }}</td>
+                    <td class="p-2 border">${{ nota.3 }}</td>
+                    <td class="p-2 border">{{ nota.4 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if total_notas %}
+    <div class="bg-blue-100 text-black p-4 mt-4 rounded shadow">
+        <p><strong>Total de Notas Emitidas:</strong> {{ total_notas }}</p>
+        <p><strong>Total Devuelto:</strong> ${{ monto_total_devuelto }}</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

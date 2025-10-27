@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Boletas Emitidas{% endblock %}
+
+{% block content %}
+<h2 class="text-white mb-4">Boletas Emitidas</h2>
+
+<form method="POST" class="mb-4">
+    {% csrf_token %}
+    <div class="row g-2 align-items-center">
+        <div class="col-md-6">
+            <select name="id_vendedor" class="form-select" required>
+                <option value="">Seleccione un vendedor</option>
+                {% for v in vendedores %}
+                    <option value="{{ v.0 }}" {% if id_vendedor == v.0|stringformat:"s" %}selected{% endif %}>
+                        {{ v.1 }} {{ v.2 }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-warning fw-bold">Consultar</button>
+        </div>
+    </div>
+</form>
+
+{% if boletas %}
+<table class="table table-light table-striped mt-3">
+    <thead>
+        <tr>
+            <th>ID Boleta</th>
+            <th>Fecha</th>
+            <th>Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for b in boletas %}
+        <tr>
+            <td>{{ b.0 }}</td>
+            <td>{{ b.1 }}</td>
+            <td>${{ b.2 }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% elif id_vendedor %}
+    <div class="alert alert-warning mt-3">No se encontraron boletas.</div>
+{% endif %}
+{% endblock %}
+

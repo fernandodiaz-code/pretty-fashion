@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestión Vendedores{% endblock %}
+
+{% block content %}
+<h2 class="text-white mb-4">GESTIÓN VENDEDORES</h2>
+<div class="d-flex justify-content-center gap-4 flex-wrap">
+
+    <!-- VENTAS -->
+    <div class="card text-white p-4 rounded" style="width: 220px; background-color: #4B0082;">
+        <h5 class="mb-3 text-center">VENTAS</h5>
+        <a href="{% url 'ventas_vendedor' %}" class="btn btn-warning w-100 fw-bold">Ingresar</a>
+    </div>
+
+    <!-- BOLETAS -->
+    <div class="card text-white p-4 rounded" style="width: 220px; background-color: #4B0082;">
+        <h5 class="mb-3 text-center">BOLETAS<br>EMITIDAS</h5>
+        <a href="{% url 'boletas_vendedor' %}" class="btn btn-warning w-100 fw-bold">Ingresar</a>
+    </div>
+
+    <!-- LISTA DE VENDEDORES -->
+    <div class="card text-white p-4 rounded" style="width: 220px; background-color: #4B0082;">
+        <h5 class="mb-3 text-center">LISTA DE<br>VENDEDORES</h5>
+        <a href="{% url 'lista_vendedores' %}" class="btn btn-warning w-100 fw-bold">Ingresar</a>
+    </div>
+</div>
+{% endblock %}
+

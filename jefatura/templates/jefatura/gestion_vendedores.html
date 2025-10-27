@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Administrar Vendedores{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h1 class="text-white">Administrar Vendedores</h1>
+</div>
+
+<div class="mb-3">
+    <a href="{% url 'agregar_vendedor' %}" class="btn fw-bold" style="background-color: #FFA500; color: black;">
+        Añadir Nuevo Vendedor
+    </a>
+</div>
+
+{% if mensaje %}
+<div class="alert alert-info">
+    {{ mensaje }}
+</div>
+{% endif %}
+
+<table class="table table-bordered table-striped bg-white text-dark">
+    <thead>
+        <tr>
+            <th>ID Vendedor</th>
+            <th>Nombre</th>
+            <th>Apellido</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for vendedor in vendedores %}
+        <tr>
+            <td>{{ vendedor.0 }}</td>
+            <td>{{ vendedor.1 }}</td>
+            <td>{{ vendedor.2 }}</td>
+            <td>
+                <form method="POST" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="eliminar" value="{{ vendedor.0 }}">
+                    <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4">No hay vendedores registrados.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+
+
+
+
+
