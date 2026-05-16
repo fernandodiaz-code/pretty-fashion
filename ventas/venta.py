@@ -1,6 +1,6 @@
 import mysql.connector
-import win32print
 from datetime import date
+from pretty_fashion.printing import print_raw
 
 def realizar_venta():
     try:
@@ -98,16 +98,7 @@ def realizar_venta():
             mensaje += f"Artículo ID: {id_articulo} x1 = ${precio}\n"
         mensaje += f"Total: ${total}\n¡Gracias por su compra!\n\n\n\n\nn\n\n\n"
 
-        printer_name = "Boletera"
-        hprinter = win32print.OpenPrinter(printer_name)
-        job_info = ("Boleta", None, "RAW")
-        win32print.StartDocPrinter(hprinter, 1, job_info)
-        win32print.StartPagePrinter(hprinter)
-        win32print.WritePrinter(hprinter, mensaje.encode("utf-8"))
-        win32print.WritePrinter(hprinter, b'\x1D\x56\x00')  # Corte automático
-        win32print.EndPagePrinter(hprinter)
-        win32print.EndDocPrinter(hprinter)
-        win32print.ClosePrinter(hprinter)
+        print_raw(mensaje)
 
         print("✅ Venta realizada e impresa correctamente.")
 

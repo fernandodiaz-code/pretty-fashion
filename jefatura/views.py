@@ -1,7 +1,6 @@
 from django.shortcuts import render, redirect
-import win32print
-import win32ui
 from django.db import connection
+from pretty_fashion.printing import print_raw
 
 # Menú principal de Jefatura
 def menu_jefatura(request):
@@ -36,19 +35,14 @@ def nota_credito(request):
                     """, [id_boleta, motivo, total])
 
                 try:
-                    printer_name = "Boletera"
-                    pdc = win32ui.CreateDC()
-                    pdc.CreatePrinterDC(printer_name)
-                    pdc.StartDoc("Nota de Crédito")
-                    pdc.StartPage()
-                    pdc.TextOut(100, 100, "***** NOTA DE CREDITO *****")
-                    pdc.TextOut(100, 200, f"Boleta anulada: {id_boleta}")
-                    pdc.TextOut(100, 300, f"Motivo: {motivo}")
-                    pdc.TextOut(100, 400, f"Total devuelto: ${total}")
-                    pdc.TextOut(100, 500, "Gracias por su preferencia")
-                    pdc.EndPage()
-                    pdc.EndDoc()
-                    pdc.DeleteDC()
+                    contenido = (
+                        "***** NOTA DE CREDITO *****\n"
+                        f"Boleta anulada: {id_boleta}\n"
+                        f"Motivo: {motivo}\n"
+                        f"Total devuelto: ${total}\n"
+                        "Gracias por su preferencia\n\n\n\n\n"
+                    )
+                    print_raw(contenido)
                 except Exception as e:
                     mensaje = f"Nota registrada pero falló la impresión: {str(e)}"
                 else:

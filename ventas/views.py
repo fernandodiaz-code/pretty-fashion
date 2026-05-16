@@ -2,8 +2,8 @@
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 import mysql.connector
-import win32print
 from datetime import date
+from pretty_fashion.printing import print_raw
 
 def realizar_venta(request):
     if request.method == "POST":
@@ -83,16 +83,7 @@ def realizar_venta(request):
                 mensaje += f"Artículo ID: {id_articulo} x1 = ${precio}\n"
             mensaje += f"Neto: ${neto}\nIVA (19%): ${iva}\nTotal: ${total}\n¡Gracias por su compra!\n\n\n\n\n\n\n"
 
-            printer_name = "Boletera"
-            hprinter = win32print.OpenPrinter(printer_name)
-            job_info = ("Boleta", None, "RAW")
-            win32print.StartDocPrinter(hprinter, 1, job_info)
-            win32print.StartPagePrinter(hprinter)
-            win32print.WritePrinter(hprinter, mensaje.encode("utf-8"))
-            win32print.WritePrinter(hprinter, b'\x1D\x56\x00')
-            win32print.EndPagePrinter(hprinter)
-            win32print.EndDocPrinter(hprinter)
-            win32print.ClosePrinter(hprinter)
+            print_raw(mensaje)
 
             return HttpResponse("✅ Venta realizada e impresa correctamente.")
 
