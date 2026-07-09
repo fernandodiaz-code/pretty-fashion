@@ -1,10 +1,16 @@
-
 from django.db import models
 
-class Vendedor(models.Model):
-    nombre = models.CharField(max_length=100)
-    rut = models.CharField(max_length=12, unique=True)
-    correo = models.EmailField(blank=True, null=True)
+
+class StaffUser(models.Model):
+    username = models.CharField(max_length=150, unique=True)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    email = models.EmailField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "staff_users"
 
     def __str__(self):
-        return f"{self.nombre} ({self.rut})"
+        return f"{self.first_name} {self.last_name}"

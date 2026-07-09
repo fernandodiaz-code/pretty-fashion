@@ -1,220 +1,115 @@
-# views.py (adaptado desde consola a vista Django)
-from django.shortcuts import render, redirect
-from django.http import HttpResponse
-import mysql.connector
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from pretty_fashion.decorators import admin_required
+from .models import Galon, PedidoCentral
 
-def conectar_bd():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="Sistemasinfo123",
-        database="pretty_fashion"
-    )
 
+@admin_required
 def menu_inventario(request):
-    return render(request, "inventario/menu.html")
-
-def consultar_inventario(request):
-    if request.method == "POST":
-        conexion = conectar_bd()
-        cursor = conexion.cursor()
-
-        criterio = request.POST.get("criterio")
-        resultados = []
-        tipo_nombre = ""
-
-        if criterio == 'codigo':
-            codigo = request.POST.get("codigo")
-            cursor.execute("""
-                SELECT a.codigo, c.nombre_color,
-                       COALESCE(ts.nombre_talla, tg.nombre_talla) AS talla,
-                       t.tipo_de_prenda, a.cantidad
-                FROM articulo a
-                JOIN color c ON a.id_color = c.id_color
-                JOIN tipo t ON a.id_tipo = t.id_tipo
-                LEFT JOIN talla_sosten ts ON a.id_talla_sosten = ts.id_talla_sosten
-                LEFT JOIN talla_general tg ON a.id_talla_general = tg.id_talla_general
-                WHERE a.codigo = %s AND a.cantidad > 0
-            """, (codigo,))
-            resultados = cursor.fetchall()
-
-        elif criterio == 'tipo_talla':
-            tipo = request.POST.get("tipo")
-            talla = request.POST.get("talla")
-            cursor.execute("SELECT tipo_de_prenda FROM tipo WHERE id_tipo = %s", (tipo,))
-            tipo_data = cursor.fetchone()
-            tipo_nombre = tipo_data[0] if tipo_data else ""
-
-            if tipo == '1':
-                cursor.execute("""
-                    SELECT a.codigo, c.nombre_color, ts.nombre_talla, t.tipo_de_prenda, a.cantidad
-                    FROM articulo a
-                    JOIN color c ON a.id_color = c.id_color
-                    JOIN tipo t ON a.id_tipo = t.id_tipo
-                    JOIN talla_sosten ts ON a.id_talla_sosten = ts.id_talla_sosten
-                    WHERE a.id_tipo = %s AND ts.nombre_talla = %s AND a.cantidad > 0
-                """, (tipo, talla))
-            else:
-                cursor.execute("""
-                    SELECT a.codigo, c.nombre_color, tg.nombre_talla, t.tipo_de_prenda, a.cantidad
-                    FROM articulo a
-                    JOIN color c ON a.id_color = c.id_color
-                    JOIN tipo t ON a.id_tipo = t.id_tipo
-                    JOIN talla_general tg ON a.id_talla_general = tg.id_talla_general
-                    WHERE a.id_tipo = %s AND tg.nombre_talla = %s AND a.cantidad > 0
-                """, (tipo, talla))
-            resultados = cursor.fetchall()
-
-        cursor.close()
-        conexion.close()
-
-        return render(request, "inventario/consulta.html", {
-            "resultados": resultados,
-            "tipo_nombre": tipo_nombre
-        })
-
-    # GET: mostrar formulario de búsqueda
-    conexion = conectar_bd()
-    cursor = conexion.cursor()
-    cursor.execute("SELECT id_tipo, tipo_de_prenda FROM tipo")
-    tipos = cursor.fetchall()
-    cursor.close()
-    conexion.close()
-    return render(request, "inventario/consulta.html", {"tipos": tipos})
-
-def ingresar_stock(request):
-    if request.method == "POST":
-        codigos = request.POST.get("codigos", "").strip().split("\n")
-        conexion = conectar_bd()
-        cursor = conexion.cursor()
-        mensajes = []
-
-        for cod in codigos:
-            cod = cod.strip()
-            if cod == '':
-                continue
-            cursor.execute("SELECT id_articulo FROM articulo WHERE codigo_barra = %s", (cod,))
-            articulo = cursor.fetchone()
-            if articulo:
-                cant = request.POST.get(f"cantidad_{cod}")
-                try:
-                    cantidad = int(cant)
-                    cursor.execute("UPDATE articulo SET cantidad = cantidad + %s WHERE id_articulo = %s", (cantidad, articulo[0]))
-                    mensajes.append(f"✅ {cod} actualizado con +{cantidad} unidades.")
-                except ValueError:
-                    mensajes.append(f"❌ Cantidad inválida para {cod}.")
-            else:
-                mensajes.append(f"❌ Código {cod} no encontrado.")
-
-        conexion.commit()
-        cursor.close()
-        conexion.close()
-        return render(request, "inventario/ingresar.html", {"mensajes": mensajes})
-
-    return render(request, "inventario/ingresar.html")
-
-def consultar_por_codigo(request):
-    resultados = []
-    if request.method == "POST":
-        codigo = request.POST.get("codigo")
-        conexion = conectar_bd()
-        cursor = conexion.cursor()
-
-        cursor.execute("""
-            SELECT a.codigo, c.nombre_color,
-                   COALESCE(ts.nombre_talla, tg.nombre_talla) AS talla,
-                   t.tipo_de_prenda, a.cantidad
-            FROM articulo a
-            JOIN color c ON a.id_color = c.id_color
-            JOIN tipo t ON a.id_tipo = t.id_tipo
-            LEFT JOIN talla_sosten ts ON a.id_talla_sosten = ts.id_talla_sosten
-            LEFT JOIN talla_general tg ON a.id_talla_general = tg.id_talla_general
-            WHERE a.codigo = %s AND a.cantidad > 0
-        """, (codigo,))
-        resultados = cursor.fetchall()
-
-        cursor.close()
-        conexion.close()
-
-    return render(request, "inventario/consulta_codigo.html", {"resultados": resultados})
-
-# ✅ NUEVA FUNCIÓN: consultar_por_tipo
-def consultar_por_tipo(request):
-    resultados = []
-    tipo_nombre = ""
-    tipos = []
-
-    conexion = conectar_bd()
-    cursor = conexion.cursor()
-    cursor.execute("SELECT id_tipo, tipo_de_prenda FROM tipo")
-    tipos = cursor.fetchall()
-
-    if request.method == "POST":
-        tipo = request.POST.get("tipo")
-        talla = request.POST.get("talla")
-
-        cursor.execute("SELECT tipo_de_prenda FROM tipo WHERE id_tipo = %s", (tipo,))
-        tipo_data = cursor.fetchone()
-        tipo_nombre = tipo_data[0] if tipo_data else ""
-
-        if tipo == '1':
-            cursor.execute("""
-                SELECT a.codigo, c.nombre_color, ts.nombre_talla, t.tipo_de_prenda, a.cantidad
-                FROM articulo a
-                JOIN color c ON a.id_color = c.id_color
-                JOIN tipo t ON a.id_tipo = t.id_tipo
-                JOIN talla_sosten ts ON a.id_talla_sosten = ts.id_talla_sosten
-                WHERE a.id_tipo = %s AND ts.nombre_talla = %s AND a.cantidad > 0
-            """, (tipo, talla))
-        else:
-            cursor.execute("""
-                SELECT a.codigo, c.nombre_color, tg.nombre_talla, t.tipo_de_prenda, a.cantidad
-                FROM articulo a
-                JOIN color c ON a.id_color = c.id_color
-                JOIN tipo t ON a.id_tipo = t.id_tipo
-                JOIN talla_general tg ON a.id_talla_general = tg.id_talla_general
-                WHERE a.id_tipo = %s AND tg.nombre_talla = %s AND a.cantidad > 0
-            """, (tipo, talla))
-
-        resultados = cursor.fetchall()
-
-    cursor.close()
-    conexion.close()
-
-    return render(request, "inventario/consulta_tipo.html", {
-        "tipos": tipos,
-        "resultados": resultados,
-        "tipo_nombre": tipo_nombre
+    galones = Galon.objects.all().order_by('peso')
+    total_llenos = sum(g.llenos for g in galones)
+    total_vacios = sum(g.vacios for g in galones)
+    total_conchos = sum(g.conchos for g in galones)
+    return render(request, "inventario/menu.html", {
+        "galones": galones,
+        "total_llenos": total_llenos,
+        "total_vacios": total_vacios,
+        "total_conchos": total_conchos,
     })
 
-def ingresar_stock(request):
+
+@admin_required
+def ajustar_stock(request, peso):
+    galon = get_object_or_404(Galon, peso=peso)
     if request.method == "POST":
-        codigos = request.POST.getlist("codigos[]")
-        cantidades = request.POST.getlist("cantidades[]")
-        conexion = conectar_bd()
-        cursor = conexion.cursor()
-        mensajes = []
+        llenos = int(request.POST.get("llenos", 0))
+        vacios = int(request.POST.get("vacios", 0))
+        conchos = int(request.POST.get("conchos", 0))
+        precio = request.POST.get("precio")
 
-        for codigo, cantidad_str in zip(codigos, cantidades):
-            if not codigo.strip() or not cantidad_str.strip():
-                continue
-            try:
-                cantidad = int(cantidad_str)
-            except ValueError:
-                mensajes.append(f"❌ Cantidad inválida para {codigo}")
-                continue
+        galon.llenos = max(0, galon.llenos + llenos)
+        galon.vacios = max(0, galon.vacios + vacios)
+        galon.conchos = max(0, galon.conchos + conchos)
 
-            cursor.execute("SELECT id_articulo FROM articulo WHERE codigo_barra = %s", (codigo,))
-            articulo = cursor.fetchone()
-            if articulo:
-                cursor.execute("UPDATE articulo SET cantidad = cantidad + %s WHERE id_articulo = %s", (cantidad, articulo[0]))
-                mensajes.append(f"✅ Artículo con código {codigo} actualizado.")
-            else:
-                mensajes.append(f"❌ Código {codigo} no encontrado.")
+        if precio:
+            galon.precio = int(precio)
 
-        conexion.commit()
-        cursor.close()
-        conexion.close()
-        return render(request, "inventario/ingresar.html", {"mensajes": mensajes})
+        galon.save()
+        messages.success(request, f"Stock de {peso}kg actualizado correctamente.")
+        return redirect("menu_inventario")
 
-    return render(request, "inventario/ingresar.html")
+    return render(request, "inventario/ajustar.html", {"galon": galon})
+
+
+@admin_required
+def historial_pedidos(request):
+    pedidos = PedidoCentral.objects.all().order_by("-fecha")
+    return render(request, "inventario/pedidos.html", {"pedidos": pedidos})
+
+
+@admin_required
+def realizar_pedido(request):
+    if request.method == "POST":
+        cantidad_pedida = int(request.POST.get("cantidad_pedida", 0))
+        cantidad_devuelta = int(request.POST.get("cantidad_devuelta", 0))
+        notas = request.POST.get("notas", "")
+
+        if cantidad_pedida <= 0:
+            messages.error(request, "Debe pedir al menos 1 galón lleno.")
+            return redirect("realizar_pedido")
+
+        PedidoCentral.objects.create(
+            cantidad_pedida_llenos=cantidad_pedida,
+            cantidad_devuelta_vacios=cantidad_devuelta,
+            notas=notas,
+        )
+
+        messages.success(
+            request,
+            f"Pedido realizado: +{cantidad_pedida} llenos, -{cantidad_devuelta} vacíos."
+        )
+        return redirect("historial_pedidos")
+
+    galones = Galon.objects.all().order_by('peso')
+    total_vacios = sum(g.vacios for g in galones)
+    return render(request, "inventario/realizar_pedido.html", {
+        "galones": galones,
+        "total_vacios": total_vacios,
+    })
+
+
+@admin_required
+def confirmar_pedido(request):
+    if request.method == "POST":
+        pedido_id = request.POST.get("pedido_id")
+        peso = int(request.POST.get("peso"))
+        cantidad_llenar = int(request.POST.get("cantidad_llenar", 0))
+
+        if cantidad_llenar <= 0:
+            messages.error(request, "Cantidad inválida.")
+            return redirect("historial_pedidos")
+
+        try:
+            galon = Galon.objects.get(peso=peso)
+        except Galon.DoesNotExist:
+            messages.error(request, f"No existe galón de {peso}kg.")
+            return redirect("historial_pedidos")
+
+        if cantidad_llenar > galon.vacios:
+            messages.error(
+                request,
+                f"Solo hay {galon.vacios} galones vacíos de {peso}kg."
+            )
+            return redirect("historial_pedidos")
+
+        galon.llenos += cantidad_llenar
+        galon.vacios -= cantidad_llenar
+        galon.save()
+
+        messages.success(
+            request,
+            f"{cantidad_llenar} galones de {peso}kg marcados como llenos."
+        )
+        return redirect("menu_inventario")
+
+    return redirect("menu_inventario")

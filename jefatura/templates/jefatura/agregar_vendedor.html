@@ -1,17 +1,31 @@
-{% extends 'base.html' %}
-
+{% extends "base.html" %}
 {% block title %}Agregar Vendedor{% endblock %}
-
 {% block content %}
-<h2 class="text-white mt-4">Agregar Vendedor</h2>
-<form method="post">
-  {% csrf_token %}
-  <input type="text" name="id_vendedor" placeholder="ID del vendedor" required>
-  <input type="text" name="nombre" placeholder="Nombre del vendedor" required>
-  <input type="text" name="apellido" placeholder="Apellido del vendedor" required>
-  <button type="submit" class="btn btn-warning">Guardar</button>
-</form>
-{% if mensaje %}
-  <p class="mt-2 text-white">{{ mensaje }}</p>
-{% endif %}
+<div class="container">
+    <h1 class="mb-4">Agregar Vendedor</h1>
+
+    <div class="card card-dashboard">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" name="first_name" class="form-control" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Apellido</label>
+                        <input type="text" name="last_name" class="form-control" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+                <a href="{% url 'gestion_vendedores' %}" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Reporte Final Día{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center gap-3 mb-4">
+        <h1 class="page-title mb-0"><i class="fas fa-calendar-day me-2"></i>Reporte Final Día</h1>
+        <a href="{% url 'descargar_reporte_final_dia' %}" class="btn btn-success">
+            <i class="fas fa-file-excel me-2"></i>Descargar hoja de cálculo
+        </a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card card-dashboard text-white bg-primary">
+                <div class="card-body">
+                    <h5>Fecha</h5>
+                    <h2>{{ fecha|date:"d/m/Y" }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-dashboard text-white bg-success">
+                <div class="card-body">
+                    <h5>Ventas del día</h5>
+                    <h2>{{ cantidad }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-dashboard text-white bg-info">
+                <div class="card-body">
+                    <h5>Total vendido</h5>
+                    <h2>${{ total|floatformat:0 }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-dashboard">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Hora</th>
+                            <th>Peso</th>
+                            <th>Lugar</th>
+                            <th>Pago</th>
+                            <th>Precio base</th>
+                            <th>Descuento</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in recargas %}
+                        <tr>
+                            <td>{{ r.id }}</td>
+                            <td>{{ r.created_at|date:"H:i" }}</td>
+                            <td>{{ r.galon_peso }} kg</td>
+                            <td>{{ r.get_lugar_venta_display }}</td>
+                            <td>{{ r.resumen_pago }}</td>
+                            <td>&#36;{{ r.precio_base|floatformat:0 }}</td>
+                            <td>&#36;{{ r.descuento_total|floatformat:0 }}</td>
+                            <td><strong>&#36;{{ r.monto|floatformat:0 }}</strong></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">No hay ventas registradas hoy.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="7" class="text-end">Total</th>
+                            <th>&#36;{{ total|floatformat:0 }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <a href="{% url 'menu_informes' %}" class="btn btn-outline-secondary mt-3">Volver</a>
+</div>
+{% endblock %}

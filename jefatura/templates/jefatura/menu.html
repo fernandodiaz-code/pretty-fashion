@@ -1,55 +1,116 @@
 {% extends "base.html" %}
-
-{% block title %}Administración{% endblock %}
-
+{% block title %}Dashboard - Gas Orteguita{% endblock %}
 {% block content %}
-<div class="mb-4">
-    <h1 class="text-white">Administración</h1>
+
+<h1 class="page-title"><i class="fas fa-gauge-high me-2"></i>Dashboard</h1>
+
+<!-- Stat cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #1a3c5e, #2a5a8a);">
+            <h6>Ventas hoy</h6>
+            <h2>{{ cantidad_hoy }}</h2>
+            <p class="stat-sub">operaciones realizadas</p>
+            <i class="fas fa-fire bg-icon"></i>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #15803d, #16a34a);">
+            <h6>Ventas hoy</h6>
+            <h2>${{ total_hoy|floatformat:0 }}</h2>
+            <p class="stat-sub">ingresos del día</p>
+            <i class="fas fa-dollar-sign bg-icon"></i>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #b45309, #d97706);">
+            <h6>Galones llenos</h6>
+            <h2>{{ total_llenos }}</h2>
+            <p class="stat-sub">disponibles en stock</p>
+            <i class="fas fa-boxes-stacked bg-icon"></i>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #6d28d9, #7c3aed);">
+            <h6>Vendedores activos</h6>
+            <h2>{{ vendedores_activos }}</h2>
+            <p class="stat-sub">en el sistema</p>
+            <i class="fas fa-users bg-icon"></i>
+        </div>
+    </div>
 </div>
 
-<div class="d-flex justify-content-center mt-4 flex-wrap gap-4">
-
-    <!-- Bloque: Emitir Nota de Crédito -->
-    <div style="background-color: #4B0082; padding: 30px; border-radius: 10px;">
-        <h5 class="text-white text-center mb-3">Emitir Nota de Crédito</h5>
-        <div class="text-center">
-            <a href="{% url 'nota_credito' %}" class="btn fw-bold" style="background-color: #FFA500; color: black;">
-                Ingresar
-            </a>
+<!-- Stock y accesos rápidos -->
+<div class="row g-3">
+    <div class="col-md-7">
+        <div class="card card-dashboard">
+            <div class="card-body">
+                <h6 class="fw-bold text-muted mb-3" style="font-size:0.8rem;text-transform:uppercase;letter-spacing:1px;">
+                    <i class="fas fa-boxes-stacked me-1"></i> Stock actual por galón
+                </h6>
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Peso</th>
+                            <th>Llenos</th>
+                            <th>Vacíos</th>
+                            <th>Conchos</th>
+                            <th>Precio</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for g in galones %}
+                        <tr>
+                            <td><strong>{{ g.peso }} kg</strong></td>
+                            <td><span class="badge bg-success badge-stock">{{ g.llenos }}</span></td>
+                            <td><span class="badge bg-secondary badge-stock">{{ g.vacios }}</span></td>
+                            <td><span class="badge bg-warning text-dark badge-stock">{{ g.conchos }}</span></td>
+                            <td>${{ g.precio|floatformat:0 }}</td>
+                            <td>
+                                <a href="{% url 'ajustar_stock' g.peso %}" class="btn btn-sm btn-outline-primary">
+                                    Ajustar
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center text-muted">Sin galones registrados.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <!-- Bloque: Añadir Vendedor -->
-    <div style="background-color: #4B0082; padding: 30px; border-radius: 10px;">
-        <h5 class="text-white text-center mb-3">Añadir Vendedor</h5>
-        <div class="text-center">
-            <a href="{% url 'agregar_vendedor' %}" class="btn fw-bold" style="background-color: #FFA500; color: black;">
-                Ingresar
-            </a>
+    <div class="col-md-5">
+        <div class="card card-dashboard h-100">
+            <div class="card-body">
+                <h6 class="fw-bold text-muted mb-3" style="font-size:0.8rem;text-transform:uppercase;letter-spacing:1px;">
+                    <i class="fas fa-bolt me-1"></i> Accesos rápidos
+                </h6>
+                <div class="d-grid gap-2">
+                    <a href="/ventas/venta/" class="btn btn-success">
+                        <i class="fas fa-fire me-2"></i>Realizar Venta
+                    </a>
+                    <a href="/inventario/pedidos/nuevo/" class="btn btn-outline-primary">
+                        <i class="fas fa-truck me-2"></i>Nuevo Pedido a Central
+                    </a>
+                    <a href="/jefatura/precios/" class="btn btn-outline-primary">
+                        <i class="fas fa-tags me-2"></i>Modificar Precios de Gas
+                    </a>
+                    <a href="/informes/ventas/" class="btn btn-outline-secondary">
+                        <i class="fas fa-file-lines me-2"></i>Ver Informe de Ventas
+                    </a>
+                    <a href="/informes/final-dia/" class="btn btn-outline-secondary">
+                        <i class="fas fa-calendar-day me-2"></i>Reporte Final Día
+                    </a>
+                    <a href="/jefatura/vendedores/" class="btn btn-outline-secondary">
+                        <i class="fas fa-users me-2"></i>Gestionar Vendedores
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
-
-    <!-- Bloque: Eliminar Vendedor -->
-    <div style="background-color: #4B0082; padding: 30px; border-radius: 10px;">
-        <h5 class="text-white text-center mb-3">Eliminar Vendedor</h5>
-        <div class="text-center">
-            <a href="{% url 'gestion_vendedores_admin' %}" class="btn fw-bold" style="background-color: #FFA500; color: black;">
-                Ingresar
-            </a>
-        </div>
-    </div>
-
-    <!-- Bloque: Modificar Inventario por Robo -->
-    <div style="background-color: #4B0082; padding: 30px; border-radius: 10px;">
-        <h5 class="text-white text-center mb-3">Modificar Inventario por Robo</h5>
-        <div class="text-center">
-            <a href="{% url 'modificar_inventario_robo' %}" class="btn fw-bold" style="background-color: #FFA500; color: black;">
-                Ingresar
-            </a>
-        </div>
-    </div>
-
-    
-
 </div>
+
 {% endblock %}

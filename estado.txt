@@ -1,0 +1,164 @@
+=== GAS ORTEGUITA - ESTADO ACTUAL DEL SISTEMA ===
+Actualizado: 2026-07-01
+Ubicacion: Isla Decepcion 204, Comuna de Lo Prado, Santiago de Chile
+
+=== CONTEXTO DEL NEGOCIO ===
+- Nombre correcto del local: Gas Orteguita
+- Rubro: Venta/recarga de gas abastible (Gas Licuado)
+- Productos: galones de 5kg, 11kg, 15kg y 45kg
+- No se manejan articulos tipo retail; el inventario se controla por peso y estado del galon
+- Estados relevantes: lleno, vacio y concho
+- "Concho" = galon que el cliente trae y aun conserva un poco de gas
+
+=== MODELO DE VENTA ===
+- La operacion se registra como venta
+- El cliente trae un galon vacio o con concho
+- Se le entrega un galon lleno del mismo peso
+- La venta siempre debe respetar el mismo peso: 5kg por 5kg, 11kg por 11kg, 15kg por 15kg, 45kg por 45kg
+- Los precios dependen del peso y pueden cambiar con el tiempo
+- El sistema no usa boleta ni impresion termica por ahora
+- El flujo distingue ventas en local y ventas en camion
+- La diferencia principal entre ambos caminos es como se aplican los descuentos QR
+
+=== LOGICA DE INVENTARIO ===
+- En una venta:
+  * Cliente trae vacio -> llenos -1, vacios +1
+  * Cliente trae concho -> llenos -1, conchos +1
+- En pedidos a central:
+  * El local pide galones llenos
+  * El local debe entregar galones vacios
+- El panel de inventario permite revisar stock y ajustar cantidades por peso
+
+=== TECNOLOGIAS ===
+- Backend: Django 5.2.1 con Python
+- Base de datos actual: SQLite en db.sqlite3
+- Objetivo futuro: Supabase/PostgreSQL
+- Frontend: Django Templates + Bootstrap 5.3.3 + jQuery
+- Sin consultas MySQL raw; usar ORM Django
+
+=== ESTRUCTURA ACTUAL DEL PROYECTO ===
+gasort/
+  manage.py
+  estado.txt
+  db.sqlite3
+  .venv/
+  pretty_fashion/
+    settings.py
+    urls.py
+    decorators.py
+    wsgi.py
+    asgi.py
+  templates/
+    base.html
+    login.html
+  inventario/
+    templates/inventario/
+  ventas/
+    templates/ventas/
+  vendedores/
+    templates/vendedores/
+  jefatura/
+    templates/jefatura/
+  informes/
+    templates/informes/
+  supabase/
+  docs/
+
+=== MODELOS PRINCIPALES ===
+- Galon: peso (5/11/15/45), llenos, vacios, conchos, precio
+- PedidoCentral: fecha, cantidad_pedida_llenos, cantidad_devuelta_vacios
+- Recarga/Venta: galon_peso, estado_recibido, lugar_venta, precio_base, descuento_total, aplica_qr, tipo_qr, comentario, monto, metodo_pago
+- StaffUser: username, first_name, last_name, is_active
+- AjusteInventario: galon_peso, tipo, cantidad
+
+=== URLS PRINCIPALES ===
+/login/                    -> Iniciar sesion
+/logout/                   -> Cerrar sesion
+/ventas/venta/             -> Realizar venta
+/ventas/recarga/           -> Alias antiguo de realizar venta
+/inventario/menu/          -> Panel de inventario
+/inventario/ajustar/N/     -> Ajustar stock de N kg
+/inventario/pedidos/       -> Historial de pedidos a central
+/inventario/pedidos/nuevo/ -> Nuevo pedido a central
+/vendedores/menu/          -> Gestion de vendedores
+/vendedores/lista/         -> Lista de vendedores
+/vendedores/ventas/        -> Ventas por vendedor
+/vendedores/recargas/      -> Alias antiguo de ventas por vendedor
+/jefatura/                 -> Dashboard de administracion
+/jefatura/vendedores/      -> Gestionar vendedores
+/informes/menu/            -> Menu de informes
+/informes/ventas/          -> Informe de ventas
+/informes/recargas/        -> Alias antiguo de informe de ventas
+/admin/                    -> Django admin
+
+=== USUARIOS Y ROLES ===
+- Usuario administrador local de desarrollo: crear con manage.py createsuperuser
+- El usuario admin fue configurado como is_staff=True e is_superuser=True
+- Regla de roles:
+  * is_staff=True -> Administrador, accede a todo
+  * is_staff=False -> Vendedor, accede principalmente a realizar ventas
+- El login redirige segun rol:
+  * Administrador -> /jefatura/
+  * Vendedor -> /ventas/venta/
+
+=== MODIFICACIONES RECIENTES ===
+- Se corrigio el nombre visible del sistema y ahora queda como "Gas Orteguita"
+- Se renombro el documento inicial y ahora se llama estado.txt
+- Se agrego pantalla de login en templates/login.html
+- Se actualizo templates/base.html con sidebar dinamico por rol, topbar, usuario actual, rol y boton de salir
+- Se agrego pretty_fashion/decorators.py para proteger vistas de administrador
+- Se actualizo pretty_fashion/settings.py con configuracion de login/logout/redirecciones
+- Se actualizo pretty_fashion/urls.py para incluir login/logout y rutas principales
+- Se corrigio un error NoReverseMatch causado por una URL inexistente llamada consultar_cliente
+- Se simplifico la pantalla de recarga eliminando campos visibles de RUT, nombre y vendedor
+- Se limpio ventas/views.py para que no dependa de esos campos en el formulario de recarga
+- Se implemento/protegió acceso por rol en ventas, inventario, vendedores, jefatura e informes
+- Se implemento dashboard de jefatura con estadisticas reales:
+  * ventas del dia
+  * total vendido del dia
+  * galones llenos disponibles
+  * vendedores activos
+  * tabla de stock
+  * accesos rapidos
+- Se elimino el campo numero_operacion/codigo de autorizacion del modelo, formulario y base de datos mediante migracion 0002.
+- Se agrego migracion 0003 con campos para venta local/camion y QR: lugar_venta, precio_base, descuento_total, aplica_qr, tipo_qr y comentario.
+- Se implemento el flujo de venta con seleccion inicial de lugar:
+  * local: QR fijo automatico para 5kg, 11kg y 15kg; descuento manual para 45kg si usa QR
+  * camion: QR variable con descuento manual y comentario opcional
+- Se agregaron aliases de URL con lenguaje de ventas: /ventas/venta/, /informes/ventas/ y /vendedores/ventas/.
+
+=== ARCHIVOS MODIFICADOS RECIENTEMENTE ===
+- estado.txt
+- templates/base.html
+- templates/login.html
+- ventas/templates/ventas/recarga.html
+- ventas/templates/ventas/recarga_ok.html
+- ventas/migrations/0002_remove_recarga_numero_operacion.py
+- ventas/migrations/0003_venta_flujo_local_camion.py
+- ventas/views.py
+- pretty_fashion/decorators.py
+- pretty_fashion/settings.py
+- pretty_fashion/urls.py
+- jefatura/views.py
+- jefatura/templates/jefatura/menu.html
+- inventario/views.py
+- vendedores/views.py
+- informes/views.py
+
+=== INICIALIZACION ===
+cd /home/agente-de-fer/Escritorio/proyectos/gasort
+.venv/bin/python manage.py runserver
+
+Abrir en navegador:
+http://127.0.0.1:8000/login/
+
+=== VERIFICACION ===
+Ultima verificacion conocida:
+.venv/bin/python manage.py check
+Resultado: System check identified no issues (0 silenced).
+
+=== NOTAS PENDIENTES ===
+- Revisar visualmente el flujo completo en navegador
+- Crear usuario vendedor de prueba si se necesita validar el rol vendedor
+- Evaluar si se vuelve a agregar consulta de cliente como funcionalidad real
+- Mantener SQLite para desarrollo; migrar a Supabase/PostgreSQL solo cuando el sistema este mas estable

@@ -1,133 +1,110 @@
 from django.shortcuts import render, redirect
-from django.db import connection
-from pretty_fashion.printing import print_raw
+from django.contrib import messages
+from django.utils import timezone
+from vendedores.models import StaffUser
+from inventario.models import Galon
+from ventas.models import Recarga
+from pretty_fashion.decorators import admin_required
 
-# Menú principal de Jefatura
+
+@admin_required
 def menu_jefatura(request):
-    return render(request, 'jefatura/menu.html')
+    hoy = timezone.localdate()
+    recargas_hoy = Recarga.objects.filter(created_at__date=hoy)
+    total_hoy = sum(r.monto for r in recargas_hoy)
+    cantidad_hoy = recargas_hoy.count()
 
-# Vista para emitir nota de crédito
-def nota_credito(request):
-    mensaje = ""
-    if request.method == 'POST':
-        numero_boleta = request.POST.get('numero_boleta')
-        motivo = request.POST.get('motivo')
+    galones = Galon.objects.all().order_by('peso')
+    total_llenos = sum(g.llenos for g in galones)
+    total_vacios = sum(g.vacios for g in galones)
 
-        if numero_boleta and motivo:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT id_boleta FROM boleta WHERE id_boleta = %s", [numero_boleta])
-                boleta = cursor.fetchone()
+    vendedores_activos = StaffUser.objects.filter(is_active=True).count()
 
-            if boleta:
-                id_boleta = boleta[0]
-
-                # Calcular el total sumando subtotales de la tabla vendidos
-                with connection.cursor() as cursor:
-                    cursor.execute("""
-                        SELECT SUM(subtotal) FROM vendidos WHERE id_boleta = %s
-                    """, [id_boleta])
-                    total = cursor.fetchone()[0] or 0
-
-                with connection.cursor() as cursor:
-                    cursor.execute("""
-                        INSERT INTO nota_credito (id_boleta, motivo, monto_devuelto)
-                        VALUES (%s, %s, %s)
-                    """, [id_boleta, motivo, total])
-
-                try:
-                    contenido = (
-                        "***** NOTA DE CREDITO *****\n"
-                        f"Boleta anulada: {id_boleta}\n"
-                        f"Motivo: {motivo}\n"
-                        f"Total devuelto: ${total}\n"
-                        "Gracias por su preferencia\n\n\n\n\n"
-                    )
-                    print_raw(contenido)
-                except Exception as e:
-                    mensaje = f"Nota registrada pero falló la impresión: {str(e)}"
-                else:
-                    mensaje = "Nota de crédito emitida con éxito"
-            else:
-                mensaje = "Boleta no encontrada"
-        else:
-            mensaje = "Debe ingresar número de boleta y motivo"
-
-    return render(request, 'jefatura/nota_credito.html', {'mensaje': mensaje})
-
-# Vista para listar y eliminar vendedores
-def gestion_vendedores_admin(request):
-    mensaje = ""
-    if request.method == 'POST' and 'eliminar' in request.POST:
-        id_vendedor = request.POST.get('eliminar')
-        with connection.cursor() as cursor:
-            cursor.execute("DELETE FROM vendedor WHERE id_vendedor = %s", [id_vendedor])
-        mensaje = "Vendedor eliminado correctamente."
-
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT id_vendedor, nombre, apellido FROM vendedor")
-        vendedores = cursor.fetchall()
-
-    return render(request, 'jefatura/gestion_vendedores.html', {
-        'vendedores': vendedores,
-        'mensaje': mensaje
+    return render(request, "jefatura/menu.html", {
+        "total_hoy": total_hoy,
+        "cantidad_hoy": cantidad_hoy,
+        "total_llenos": total_llenos,
+        "total_vacios": total_vacios,
+        "galones": galones,
+        "vendedores_activos": vendedores_activos,
     })
 
-# Vista para agregar un nuevo vendedor
-def agregar_vendedor(request):
-    mensaje = ""
-    if request.method == 'POST':
-        id_vendedor = request.POST.get('id_vendedor')
-        nombre = request.POST.get('nombre')
-        apellido = request.POST.get('apellido')
 
-        if id_vendedor and nombre and apellido:
+@admin_required
+def gestion_vendedores(request):
+    vendedores = StaffUser.objects.all()
+    return render(request, "jefatura/gestion_vendedores.html", {
+        "vendedores": vendedores,
+    })
+
+
+@admin_required
+def gestionar_precios(request):
+    galones = list(Galon.objects.all().order_by("peso"))
+
+    if request.method == "POST":
+        for galon in galones:
+            precio = request.POST.get(f"precio_{galon.id}", "").strip()
+
+            if not precio:
+                messages.error(request, f"Debe ingresar precio para {galon.peso} kg.")
+                return redirect("gestionar_precios")
+
             try:
-                with connection.cursor() as cursor:
-                    cursor.execute("""
-                        INSERT INTO vendedor (id_vendedor, nombre, apellido)
-                        VALUES (%s, %s, %s)
-                    """, [id_vendedor, nombre, apellido])
-                return redirect('gestion_vendedores_admin')
-            except Exception as e:
-                mensaje = f"Error al agregar vendedor: {str(e)}"
-        else:
-            mensaje = "Debe completar todos los campos."
+                precio_numero = int(precio)
+            except ValueError:
+                messages.error(request, f"Precio inválido para {galon.peso} kg.")
+                return redirect("gestionar_precios")
 
-    return render(request, 'jefatura/agregar_vendedor.html', {
-        'mensaje': mensaje
+            if precio_numero < 0:
+                messages.error(request, f"El precio de {galon.peso} kg no puede ser negativo.")
+                return redirect("gestionar_precios")
+
+            galon.precio = precio_numero
+
+        Galon.objects.bulk_update(galones, ["precio"])
+        messages.success(request, "Precios de gas actualizados correctamente.")
+        return redirect("gestionar_precios")
+
+    return render(request, "jefatura/gestionar_precios.html", {
+        "galones": galones,
     })
 
-# Vista para modificar inventario por robo
-def modificar_inventario_robo(request):
-    mensaje = ""
-    if request.method == 'POST':
-        codigo_barra = request.POST.get('codigo_barra')
-        cantidad = int(request.POST.get('cantidad'))
 
-        with connection.cursor() as cursor:
-            # Verificar existencia del artículo
-            cursor.execute("""
-                SELECT cantidad FROM articulo WHERE codigo_barra = %s
-            """, [codigo_barra])
-            articulo = cursor.fetchone()
+@admin_required
+def agregar_vendedor(request):
+    if request.method == "POST":
+        username = request.POST.get("username", "").strip()
+        first_name = request.POST.get("first_name", "").strip()
+        last_name = request.POST.get("last_name", "").strip()
 
-            if articulo:
-                stock_actual = articulo[0]
-                if cantidad > stock_actual:
-                    mensaje = f"No se puede descontar {cantidad}. Solo hay {stock_actual} en stock."
-                else:
-                    # Descontar del stock
-                    cursor.execute("""
-                        UPDATE articulo
-                        SET cantidad = cantidad - %s
-                        WHERE codigo_barra = %s
-                    """, [cantidad, codigo_barra])
-                    mensaje = "Inventario actualizado correctamente."
-            else:
-                mensaje = "El artículo con ese código de barra no existe."
+        if not all([username, first_name, last_name]):
+            messages.error(request, "Todos los campos son obligatorios.")
+            return redirect("agregar_vendedor")
 
-    return render(request, 'jefatura/modificar_inventario_robo.html', {'mensaje': mensaje})
+        if StaffUser.objects.filter(username=username).exists():
+            messages.error(request, f"El usuario '{username}' ya existe.")
+            return redirect("agregar_vendedor")
 
-# Vista para otras funciones administrativas
-def gestion_general_sistema(request):
-    return render(request, 'jefatura/gestion_general_sistema.html')
+        StaffUser.objects.create(
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+        )
+        messages.success(request, "Vendedor agregado correctamente.")
+        return redirect("gestion_vendedores")
+
+    return render(request, "jefatura/agregar_vendedor.html")
+
+
+@admin_required
+def eliminar_vendedor(request, id):
+    if request.method == "POST":
+        try:
+            vendedor = StaffUser.objects.get(id=id)
+            vendedor.is_active = False
+            vendedor.save()
+            messages.success(request, "Vendedor desactivado correctamente.")
+        except StaffUser.DoesNotExist:
+            messages.error(request, "Vendedor no encontrado.")
+    return redirect("gestion_vendedores")

@@ -1,28 +1,38 @@
-{% extends 'base.html' %}
-
-{% block title %}Gestión Vendedores{% endblock %}
-
+{% extends "base.html" %}
+{% block title %}Vendedores{% endblock %}
 {% block content %}
-<h2 class="text-white mb-4">GESTIÓN VENDEDORES</h2>
-<div class="d-flex justify-content-center gap-4 flex-wrap">
+<div class="container">
+    <h1 class="mb-4">Gestión de Vendedores</h1>
 
-    <!-- VENTAS -->
-    <div class="card text-white p-4 rounded" style="width: 220px; background-color: #4B0082;">
-        <h5 class="mb-3 text-center">VENTAS</h5>
-        <a href="{% url 'ventas_vendedor' %}" class="btn btn-warning w-100 fw-bold">Ingresar</a>
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <a href="{% url 'lista_vendedores' %}" class="btn btn-outline-primary w-100">
+                Lista de Vendedores
+            </a>
+        </div>
+        <div class="col-md-4 mb-3">
+            <a href="{% url 'ventas_vendedor' %}" class="btn btn-outline-primary w-100">
+                Ventas por Vendedor
+            </a>
+        </div>
     </div>
 
-    <!-- BOLETAS -->
-    <div class="card text-white p-4 rounded" style="width: 220px; background-color: #4B0082;">
-        <h5 class="mb-3 text-center">BOLETAS<br>EMITIDAS</h5>
-        <a href="{% url 'boletas_vendedor' %}" class="btn btn-warning w-100 fw-bold">Ingresar</a>
+    {% if vendedores %}
+    <div class="card card-dashboard mt-3">
+        <div class="card-body">
+            <h5>Vendedores Activos</h5>
+            <ul class="list-group">
+                {% for v in vendedores %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ v.first_name }} {{ v.last_name }}
+                    <span class="badge bg-primary rounded-pill">@{{ v.username }}</span>
+                </li>
+                {% empty %}
+                <li class="list-group-item">No hay vendedores activos.</li>
+                {% endfor %}
+            </ul>
+        </div>
     </div>
-
-    <!-- LISTA DE VENDEDORES -->
-    <div class="card text-white p-4 rounded" style="width: 220px; background-color: #4B0082;">
-        <h5 class="mb-3 text-center">LISTA DE<br>VENDEDORES</h5>
-        <a href="{% url 'lista_vendedores' %}" class="btn btn-warning w-100 fw-bold">Ingresar</a>
-    </div>
+    {% endif %}
 </div>
 {% endblock %}
-

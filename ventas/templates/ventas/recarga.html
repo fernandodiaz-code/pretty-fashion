@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% block title %}Realizar Venta{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Realizar Venta</h1>
+
+    <div class="card card-dashboard">
+        <div class="card-body">
+            <form method="post" id="form-venta">
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Lugar de venta</label>
+                    <div class="btn-group w-100" role="group" aria-label="Lugar de venta">
+                        <input type="radio" class="btn-check" name="lugar_venta" id="lugar-local" value="local" checked>
+                        <label class="btn btn-outline-primary" for="lugar-local">
+                            <i class="fas fa-store me-2"></i>Local
+                        </label>
+
+                        <input type="radio" class="btn-check" name="lugar_venta" id="lugar-camion" value="camion">
+                        <label class="btn btn-outline-primary" for="lugar-camion">
+                            <i class="fas fa-truck me-2"></i>Camión
+                        </label>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Peso del galón</label>
+                        <select name="peso" id="peso" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            {% for g in galones %}
+                            <option value="{{ g.peso }}" data-precio="{{ g.precio }}" data-disponible="{{ g.llenos }}">
+                                {{ g.peso }} kg
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted" id="disponible-display">Disponibles: -</small>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Estado del galón recibido</label>
+                        <select name="estado" class="form-select" required>
+                            <option value="vacio">Vacío</option>
+                            <option value="concho">Concho</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Método de pago</label>
+                        <select name="metodo_pago" id="metodo_pago" class="form-select" required>
+                            <option value="efectivo">Efectivo</option>
+                            <option value="debito">Débito</option>
+                            <option value="transferencia">Transferencia</option>
+                            <option value="credito">Crédito</option>
+                            <option value="bono_gobierno">Bono del gobierno</option>
+                            <option value="vale_fisico">Vale físico</option>
+                            <option value="vale_digital">Vale digital</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="border rounded p-3 mb-3 bg-light" id="pago-mixto-box">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="pago_mixto" name="pago_mixto">
+                        <label class="form-check-label fw-semibold" for="pago_mixto">Pago mixto</label>
+                    </div>
+
+                    <div class="row g-3" id="pago-mixto-wrapper" style="display:none;">
+                        <div class="col-md-3">
+                            <label class="form-label">Monto método 1</label>
+                            <input type="number" name="monto_pago_1" id="monto_pago_1" class="form-control" min="0" step="1" value="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Método 2</label>
+                            <select name="metodo_pago_2" id="metodo_pago_2" class="form-select">
+                                <option value="">Seleccionar...</option>
+                                <option value="efectivo">Efectivo</option>
+                                <option value="debito">Débito</option>
+                                <option value="transferencia">Transferencia</option>
+                                <option value="credito">Crédito</option>
+                                <option value="bono_gobierno">Bono del gobierno</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Monto método 2</label>
+                            <input type="number" name="monto_pago_2" id="monto_pago_2" class="form-control" min="0" step="1" value="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Diferencia</label>
+                            <div class="border rounded p-2 bg-white">
+                                <strong id="diferencia-pago-display">$0</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-muted" id="pago-mixto-help">Active esta opción si el cliente paga la misma venta con dos métodos.</small>
+                </div>
+
+                <hr>
+
+
+                <div class="row mb-3 align-items-end">
+                    <div class="col-md-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="aplica_qr" name="aplica_qr">
+                            <label class="form-check-label fw-semibold" for="aplica_qr">Aplicar QR de descuento</label>
+                        </div>
+                        <small class="text-muted" id="qr-help">Local: QR fijo para 5, 11 y 15 kg.</small>
+                    </div>
+
+                    <div class="col-md-4" id="descuento-manual-wrapper" style="display:none;">
+                        <label class="form-label">Descuento manual</label>
+                        <input type="number" name="descuento_manual" id="descuento_manual" class="form-control" min="0" step="1" value="0">
+                    </div>
+
+                    <div class="col-md-4" id="comentario-wrapper" style="display:none;">
+                        <label class="form-label">Comentario opcional</label>
+                        <input type="text" name="comentario" id="comentario" class="form-control" placeholder="Detalle del QR o caso especial">
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 bg-light">
+                            <small class="text-muted d-block">Precio base</small>
+                            <strong id="precio-display">$0</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 bg-light">
+                            <small class="text-muted d-block">Descuento</small>
+                            <strong id="descuento-display">$0</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 bg-success text-white">
+                            <small class="d-block opacity-75">Total final</small>
+                            <strong id="total-display">$0</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="fas fa-check me-2"></i>Confirmar venta
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const qrLocalFijo = {5: 2500, 11: 4000, 15: 5500};
+
+    function formatCLP(value) {
+        return '$' + Number(value || 0).toLocaleString('es-CL');
+    }
+
+    function getSelectedLugar() {
+        return document.querySelector('input[name="lugar_venta"]:checked').value;
+    }
+
+    function getSelectedPeso() {
+        const peso = document.getElementById('peso').value;
+        return peso ? parseInt(peso, 10) : 0;
+    }
+
+    function getPrecioBase() {
+        const selected = document.querySelector('#peso option:checked');
+        return selected ? parseInt(selected.dataset.precio || '0', 10) : 0;
+    }
+
+    function calcularDescuento() {
+        const lugar = getSelectedLugar();
+        const peso = getSelectedPeso();
+        const aplicaQr = document.getElementById('aplica_qr').checked;
+        const manual = parseInt(document.getElementById('descuento_manual').value || '0', 10);
+
+        if (!aplicaQr) {
+            return 0;
+        }
+
+        if (lugar === 'local' && qrLocalFijo[peso]) {
+            return qrLocalFijo[peso];
+        }
+
+        return Math.max(manual, 0);
+    }
+
+    function actualizarFormulario() {
+        const lugar = getSelectedLugar();
+        const peso = getSelectedPeso();
+        const precio = getPrecioBase();
+        const metodoPago = document.getElementById('metodo_pago').value;
+        const pagoMixto = document.getElementById('pago_mixto').checked;
+        const aplicaQr = document.getElementById('aplica_qr').checked;
+        const selected = document.querySelector('#peso option:checked');
+        const disponible = selected ? selected.dataset.disponible : '-';
+
+        const requiereDescuentoManual = aplicaQr && (lugar === 'camion' || (lugar === 'local' && peso === 45));
+        document.getElementById('descuento-manual-wrapper').style.display = requiereDescuentoManual ? 'block' : 'none';
+        document.getElementById('comentario-wrapper').style.display = lugar === 'camion' ? 'block' : 'none';
+
+        if (!requiereDescuentoManual) {
+            document.getElementById('descuento_manual').value = '0';
+        }
+
+        const descuento = calcularDescuento();
+        const total = ['vale_fisico', 'vale_digital'].includes(metodoPago) ? 0 : Math.max(precio - descuento, 0);
+        const usaVale = ['vale_fisico', 'vale_digital'].includes(metodoPago);
+        const pagoMixtoWrapper = document.getElementById('pago-mixto-wrapper');
+        const pagoMixtoHelp = document.getElementById('pago-mixto-help');
+        const pagoMixtoInput = document.getElementById('pago_mixto');
+
+        pagoMixtoInput.disabled = usaVale || total === 0;
+        if (usaVale || total === 0) {
+            pagoMixtoInput.checked = false;
+        }
+
+        const pagoMixtoActivo = pagoMixtoInput.checked;
+        pagoMixtoWrapper.style.display = pagoMixtoActivo ? 'flex' : 'none';
+
+        if (!pagoMixtoActivo) {
+            document.getElementById('monto_pago_1').value = '0';
+            document.getElementById('monto_pago_2').value = '0';
+            document.getElementById('metodo_pago_2').value = '';
+        }
+
+        const montoPago1 = parseInt(document.getElementById('monto_pago_1').value || '0', 10);
+        const montoPago2 = parseInt(document.getElementById('monto_pago_2').value || '0', 10);
+        const diferenciaPago = pagoMixtoActivo ? total - montoPago1 - montoPago2 : 0;
+
+        document.getElementById('precio-display').textContent = formatCLP(precio);
+        document.getElementById('descuento-display').textContent = formatCLP(descuento);
+        document.getElementById('total-display').textContent = formatCLP(total);
+        document.getElementById('diferencia-pago-display').textContent = formatCLP(diferenciaPago);
+        document.getElementById('disponible-display').textContent = 'Disponibles: ' + (disponible || '-');
+
+        let ayuda = 'Sin QR aplicado.';
+        if (['vale_fisico', 'vale_digital'].includes(metodoPago)) {
+            ayuda = 'Vale: el cliente no paga monto en caja.';
+        } else if (aplicaQr && lugar === 'local' && qrLocalFijo[peso]) {
+            ayuda = 'QR local fijo aplicado automáticamente.';
+        } else if (aplicaQr && lugar === 'local' && peso === 45) {
+            ayuda = '45 kg local requiere descuento manual.';
+        } else if (aplicaQr && lugar === 'camion') {
+            ayuda = 'Camión usa descuento QR manual.';
+        } else if (lugar === 'local') {
+            ayuda = 'Local: QR fijo para 5, 11 y 15 kg.';
+        } else {
+            ayuda = 'Camión: QR variable, ingresar monto si aplica.';
+        }
+        document.getElementById('qr-help').textContent = ayuda;
+
+        if (usaVale || total === 0) {
+            pagoMixtoHelp.textContent = 'Pago mixto no disponible cuando el total final es $0.';
+        } else if (pagoMixtoActivo && diferenciaPago === 0) {
+            pagoMixtoHelp.textContent = 'Pago mixto cuadrado correctamente.';
+        } else if (pagoMixtoActivo) {
+            pagoMixtoHelp.textContent = 'La suma de ambos montos debe ser igual al total final.';
+        } else {
+            pagoMixtoHelp.textContent = 'Active esta opción si el cliente paga la misma venta con dos métodos.';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('input[name="lugar_venta"]').forEach(function(input) {
+            input.addEventListener('change', actualizarFormulario);
+        });
+        ['peso', 'metodo_pago', 'pago_mixto', 'metodo_pago_2', 'monto_pago_1', 'monto_pago_2', 'aplica_qr', 'descuento_manual'].forEach(function(id) {
+            document.getElementById(id).addEventListener('input', actualizarFormulario);
+            document.getElementById(id).addEventListener('change', actualizarFormulario);
+        });
+        actualizarFormulario();
+    });
+</script>
+{% endblock %}

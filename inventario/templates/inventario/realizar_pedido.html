@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Nuevo Pedido a Central{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Nuevo Pedido a Central</h1>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card card-dashboard text-white bg-secondary">
+                <div class="card-body">
+                    <h5>Total Vacíos Disponibles</h5>
+                    <h2>{{ total_vacios }}</h2>
+                    <small>Para devolver a central</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card card-dashboard text-white bg-info">
+                <div class="card-body">
+                    <h5>Stock Actual por Peso</h5>
+                    <ul class="list-unstyled mb-0">
+                        {% for g in galones %}
+                        <li>{{ g.peso }}kg → Llenos: {{ g.llenos }} | Vacíos: {{ g.vacios }}</li>
+                        {% empty %}
+                        <li>Sin datos</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-dashboard">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Cantidad de Galones Llenos a Pedir</label>
+                        <input type="number" name="cantidad_pedida" class="form-control" required min="1" step="1">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Cantidad de Vacíos a Devolver</label>
+                        <input type="number" name="cantidad_devuelta" class="form-control" min="0" step="1">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Notas (opcional)</label>
+                    <textarea name="notas" class="form-control" rows="2"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Realizar Pedido</button>
+                <a href="{% url 'menu_inventario' %}" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

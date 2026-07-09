@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Venta Exitosa{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="card card-dashboard text-center">
+        <div class="card-body">
+            <h1 class="text-success mb-4">Venta Exitosa</h1>
+            <div class="row justify-content-center">
+                <div class="col-md-7">
+                    <table class="table table-bordered text-start">
+                        <tr>
+                            <th>Galón</th>
+                            <td>{{ peso }} kg</td>
+                        </tr>
+                        <tr>
+                            <th>Lugar</th>
+                            <td>{{ lugar_venta|title }}</td>
+                        </tr>
+                        <tr>
+                            <th>Estado recibido</th>
+                            <td>{{ estado }}</td>
+                        </tr>
+                        <tr>
+                            <th>Método de pago</th>
+                            <td>{{ metodo_pago }}</td>
+                        </tr>
+                        {% if pago_mixto %}
+                        <tr>
+                            <th>Detalle pago mixto</th>
+                            <td>
+                                {{ metodo_pago }}: &#36;{{ monto_pago_1|floatformat:0 }}<br>
+                                {{ metodo_pago_2 }}: &#36;{{ monto_pago_2|floatformat:0 }}
+                            </td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <th>Precio base</th>
+                            <td>&#36;{{ precio_base|floatformat:0 }}</td>
+                        </tr>
+                        <tr>
+                            <th>Descuento</th>
+                            <td>&#36;{{ descuento_total|floatformat:0 }}</td>
+                        </tr>
+                        <tr>
+                            <th>Total final</th>
+                            <td><strong>&#36;{{ monto|floatformat:0 }}</strong></td>
+                        </tr>
+                        {% if comentario %}
+                        <tr>
+                            <th>Comentario</th>
+                            <td>{{ comentario }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                    <a href="{% url 'realizar_venta' %}" class="btn btn-primary btn-lg">Nueva Venta</a>
+                    <a href="{% url 'menu_inventario' %}" class="btn btn-secondary btn-lg">Ir al Inventario</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,221 @@
+=== QRS DE DESCUENTO ABASTIBLE - GAS ORTEGUITA ===
+Actualizado: 2026-07-01
+Proyecto: /home/agente-de-fer/Escritorio/proyectos/gasort
+
+=== OBJETIVO ===
+Documentar como se deben entender y registrar los descuentos QR Abastible dentro del sistema de ventas de Gas Orteguita.
+
+Este archivo describe reglas operativas entregadas por el negocio y datos publicos encontrados en canales oficiales de Abastible. No reemplaza contrato, manual comercial ni reglas internas oficiales de Abastible.
+
+=== REGISTRO ACTUAL EN CUADERNO ===
+El local registra ventas con esta estructura base:
+
+Peso, medio de pago, descuento?, precio, lugar
+
+Ejemplo simple:
+15k, efectivo/descuento, 25000, local
+
+Ejemplo con descuento de camion:
+15k, efectivo/descuento 24500(6000), camion
+
+Interpretacion del ejemplo:
+- Galon vendido: 15kg
+- Metodo de pago: efectivo
+- Hubo descuento QR
+- Valor cobrado final: 24500
+- Monto descontado total: 6000
+- Lugar de venta: camion / domicilio
+- En ese caso el descuento total corresponde a dos QR de 15kg de 3000 cada uno
+
+=== ATRIBUTOS QUE DEBE TENER UNA VENTA / RECARGA ===
+La entidad de venta debe poder registrar, como minimo:
+
+1. Peso del galon
+   - Valores permitidos: 5kg, 11kg, 15kg, 45kg
+
+2. Metodo de pago
+   - efectivo
+   - debito
+   - transferencia
+   - credito
+   - bono del gobierno
+   - vale fisico
+   - vale digital
+
+3. Descuento
+   - Sin descuento
+   - QR local
+   - QR domicilio / camion
+   - Eventualmente mas de un QR por el mismo galon en caso excepcional
+
+4. Valor final
+   - Formula base:
+     valor_final = precio_gas - descuento_total
+
+5. Lugar de venta
+   - local
+   - camion
+
+=== CLASIFICACION DE QRS ===
+Existen dos tipos operativos principales:
+
+1. QR local
+   - Tambien se le puede llamar simplemente "qr"
+   - Asociado a venta en local
+   - Se caracteriza por ser QR verde
+   - En la practica del local, el 99% de los casos son descuentos fijos
+   - Regla: un QR por galon
+
+2. QR domicilio / camion
+   - Asociado a venta en camion o despacho a domicilio
+   - Descuento variable
+   - Depende del cliente/persona y del descuento disponible
+   - Puede existir excepcionalmente uso de dos QR para un mismo galon, especialmente en casos de clientes de bajos recursos
+   - En el registro manual, el descuento total se anota entre parentesis
+
+=== QR LOCAL - DESCUENTOS FIJOS ===
+Segun regla operativa entregada por el negocio:
+
+- Galon 5kg:
+  descuento QR local = 2500
+
+- Galon 11kg:
+  descuento QR local = 4000
+
+- Galon 15kg:
+  descuento QR local = 5500
+
+- Galon 45kg:
+  pendiente definir descuento QR local si aplica
+
+Regla:
+- Un QR local corresponde a un galon
+- No se debe asumir doble QR local salvo que el negocio lo autorice explicitamente
+
+=== QR DOMICILIO / CAMION - DESCUENTOS VARIABLES ===
+Segun regla operativa entregada por el negocio:
+
+- Galon 5kg:
+  descuento usual entre 800 y 1000
+
+- Galon 11kg:
+  descuento usual entre 2000 y 4000
+
+- Galon 15kg:
+  descuento usual entre 3000 y 6000 o mas
+
+- Galon 45kg:
+  pendiente levantar rango operativo real
+
+Reglas:
+- El descuento no es fijo
+- Debe ingresarse el monto real usado en la venta
+- Puede haber mas de un QR por galon en casos excepcionales
+- Si se usan dos QR, el sistema debe guardar:
+  * cantidad_qr = 2
+  * descuento_unitario si ambos son iguales, o detalle por QR si son distintos
+  * descuento_total = suma de todos los QR aplicados
+
+Ejemplo:
+Precio gas 15kg = 30500
+QR 1 = 3000
+QR 2 = 3000
+Descuento total = 6000
+Valor final = 24500
+Registro cuaderno: 15k, efectivo/descuento 24500(6000), camion
+
+=== INFORMACION PUBLICA SOBRE WHATSAPP ABASTIBLE ===
+Fuentes revisadas el 2026-07-01:
+
+1. Pagina oficial WhatsApp Abastible:
+   https://abastible.cl/gas-cilindro/whatsapp/
+
+   Informacion relevante:
+   - Abastible permite pedir gas por WhatsApp.
+   - El numero publico indicado es +56 2 2938 1232.
+   - El flujo para domicilio incluye:
+     * elegir "Pedir gas a tu domicilio"
+     * seleccionar "Pedir gas con descuento"
+     * ingresar direccion, cilindro y descuento disponible
+     * confirmar pedido
+     * recibir un QR de descuento
+   - El distribuidor Pyme lleva el gas al domicilio.
+
+2. Pagina oficial Convenios y Beneficios:
+   https://abastible.cl/gas-cilindro/convenios-y-beneficios/
+
+   Informacion relevante:
+   - Para acceder a descuento de gas licuado se ingresa al WhatsApp +56 2 2938 1232.
+   - En el menu de WhatsApp se selecciona "En mi domicilio" o "En el local, Al Paso".
+   - Se elige la carga del cilindro para generar el descuento.
+   - Se obtiene un QR que debe mostrarse para hacer valido el descuento.
+   - Si es primera inscripcion, Abastible puede pedir responder 3 preguntas de seguridad para validar identidad.
+
+3. Busqueda publica relacionada a canales oficiales:
+   - En resultados publicos asociados a Abastible se menciona que WhatsApp permite generar codigos QR de descuento a domicilio y QR de descuento para compra en local "Abastible Al Paso".
+   - Esto coincide con la distincion operativa del negocio entre QR de local y QR de domicilio/camion.
+
+=== DECISIONES DE MODELADO RECOMENDADAS ===
+Para no perder informacion, conviene modelar los descuentos de forma explicita y no solo como texto.
+
+Campos recomendados en la venta/recarga:
+
+- peso_galon
+- metodo_pago
+- lugar_venta
+- precio_base
+- tiene_descuento
+- tipo_descuento
+  * ninguno
+  * qr_local
+  * qr_camion
+  * otro
+- cantidad_qr
+- descuento_total
+- valor_final
+- observacion_descuento
+
+Si se quiere mayor detalle, crear una entidad separada para QR aplicados:
+
+QRDescuentoAplicado:
+- recarga
+- tipo_qr: local/camion
+- peso_galon
+- monto_descuento
+- color_qr: verde/otro/desconocido
+- origen: whatsapp/local/manual
+- observacion
+
+Ventaja:
+- Permite guardar dos QR en una misma venta sin perder detalle
+- Permite auditar cuanto descuento se aplico
+- Permite informes por tipo de QR, peso, local/camion y monto descontado
+
+=== REGLAS DE VALIDACION SUGERIDAS ===
+1. El valor final debe ser:
+   precio_base - descuento_total
+
+2. El descuento total no debe ser mayor al precio base.
+
+3. Si lugar_venta = local y tipo_descuento = qr_local:
+   - aplicar por defecto descuento fijo segun peso
+   - cantidad_qr sugerida = 1
+
+4. Si lugar_venta = camion y tipo_descuento = qr_camion:
+   - permitir ingresar monto manual
+   - permitir cantidad_qr mayor a 1 solo si se marca como caso excepcional o se deja observacion
+
+5. Si metodo de pago incluye descuento:
+   - exigir tipo_descuento y descuento_total
+
+6. Si no hay descuento:
+   - descuento_total = 0
+   - valor_final = precio_base
+
+=== PENDIENTES PARA IMPLEMENTACION ===
+- Confirmar si el galon de 45kg usa QR local y cual es su monto fijo si aplica.
+- Confirmar si los QR de local siempre deben limitarse a uno por galon.
+- Confirmar si el sistema debe registrar codigo/folio/identificador del QR o solo monto.
+- Confirmar si los descuentos QR deben afectar caja/informes por separado.
+- Definir si "bono del gobierno", "vale fisico" y "vale digital" son metodos de pago, descuentos o ambos segun la operacion real del negocio.
+

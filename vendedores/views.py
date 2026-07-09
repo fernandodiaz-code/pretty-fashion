@@ -1,108 +1,61 @@
-from django.shortcuts import render
-from django.db import connection
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from pretty_fashion.decorators import admin_required
+from .models import StaffUser
+from ventas.models import Recarga
 from datetime import datetime
 
-# Menú principal
+
+@admin_required
 def menu_vendedores(request):
-    return render(request, 'vendedores/menu.html')
+    vendedores = StaffUser.objects.filter(is_active=True)
+    return render(request, "vendedores/menu.html", {"vendedores": vendedores})
 
-# Lista de vendedores
+
+@admin_required
 def lista_vendedores(request):
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT id_vendedor, nombre, apellido FROM vendedor")
-        vendedores = cursor.fetchall()
-    return render(request, 'vendedores/lista.html', {'vendedores': vendedores})
+    vendedores = StaffUser.objects.all()
+    return render(request, "vendedores/lista.html", {"vendedores": vendedores})
 
-# Boletas emitidas por un vendedor seleccionado desde formulario
-def boletas_por_vendedor(request):
-    vendedores = []
-    boletas = []
+
+@admin_required
+def recargas_por_vendedor(request):
+    vendedores = StaffUser.objects.filter(is_active=True)
+    recargas = []
     id_vendedor = None
     nombre_vendedor = ""
+    fecha_inicio = ""
+    fecha_fin = ""
+    total = 0
 
-    # Obtener todos los vendedores
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT id_vendedor, nombre, apellido FROM vendedor")
-        vendedores = cursor.fetchall()
+    if request.method == "POST":
+        id_vendedor = request.POST.get("id_vendedor")
+        fecha_inicio = request.POST.get("fecha_inicio", "")
+        fecha_fin = request.POST.get("fecha_fin", "")
 
-    if request.method == 'POST':
-        id_vendedor = request.POST.get('id_vendedor')
+        try:
+            vendedor = StaffUser.objects.get(id=id_vendedor)
+            nombre_vendedor = str(vendedor)
+            qs = Recarga.objects.filter(vendedor=vendedor)
 
-        if id_vendedor:
-            with connection.cursor() as cursor:
-                # Boletas emitidas por el vendedor
-                cursor.execute("""
-                    SELECT b.id_boleta, b.fecha, SUM(v.subtotal) AS total
-                    FROM boleta b
-                    JOIN vendidos v ON b.id_boleta = v.id_boleta
-                    WHERE b.id_vendedor = %s
-                    GROUP BY b.id_boleta, b.fecha
-                    ORDER BY b.fecha DESC
-                """, [id_vendedor])
-                boletas = cursor.fetchall()
+            if fecha_inicio:
+                fecha_i = datetime.strptime(fecha_inicio, "%Y-%m-%d").date()
+                qs = qs.filter(created_at__date__gte=fecha_i)
+            if fecha_fin:
+                fecha_f = datetime.strptime(fecha_fin, "%Y-%m-%d").date()
+                qs = qs.filter(created_at__date__lte=fecha_f)
 
-                # Obtener nombre del vendedor
-                cursor.execute("SELECT nombre, apellido FROM vendedor WHERE id_vendedor = %s", [id_vendedor])
-                result = cursor.fetchone()
-                if result:
-                    nombre_vendedor = f"{result[0]} {result[1]}"
+            recargas = qs.order_by("-created_at")
+            total = sum(r.monto for r in recargas)
+        except (StaffUser.DoesNotExist, ValueError):
+            messages.error(request, "Datos inválidos.")
 
-    return render(request, 'vendedores/boletas.html', {
-        'boletas': boletas,
-        'vendedores': vendedores,
-        'id_vendedor': id_vendedor,
-        'nombre_vendedor': nombre_vendedor
-    })
-
-# Ventas por rango de fechas: muestra el total vendido
-def ventas_por_vendedor(request):
-    total_ventas = None
-    vendedores = []
-    fecha_inicio = fecha_fin = id_vendedor = None
-    nombre_vendedor = ""
-
-    # Cargar lista de vendedores
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT id_vendedor, nombre, apellido FROM vendedor")
-        vendedores = cursor.fetchall()
-
-    if request.method == 'POST':
-        id_vendedor = request.POST.get('id_vendedor')
-        fecha_inicio = request.POST.get('fecha_inicio')
-        fecha_fin = request.POST.get('fecha_fin')
-
-        if id_vendedor and fecha_inicio and fecha_fin:
-            try:
-                datetime.strptime(fecha_inicio, '%Y-%m-%d')
-                datetime.strptime(fecha_fin, '%Y-%m-%d')
-
-                with connection.cursor() as cursor:
-                    # Calcular total de ventas
-                    cursor.execute("""
-                        SELECT SUM(v.subtotal)
-                        FROM boleta b
-                        JOIN vendidos v ON b.id_boleta = v.id_boleta
-                        WHERE b.id_vendedor = %s AND b.fecha BETWEEN %s AND %s
-                    """, [id_vendedor, fecha_inicio, fecha_fin])
-                    total_ventas = cursor.fetchone()[0] or 0
-
-                    # Nombre del vendedor
-                    cursor.execute("SELECT nombre, apellido FROM vendedor WHERE id_vendedor = %s", [id_vendedor])
-                    result = cursor.fetchone()
-                    if result:
-                        nombre_vendedor = f"{result[0]} {result[1]}"
-
-            except ValueError:
-                return render(request, 'vendedores/ventas.html', {
-                    'mensaje': "Fechas inválidas",
-                    'vendedores': vendedores
-                })
-
-    return render(request, 'vendedores/ventas.html', {
-        'total_ventas': total_ventas,
-        'vendedores': vendedores,
-        'fecha_inicio': fecha_inicio,
-        'fecha_fin': fecha_fin,
-        'id_vendedor': id_vendedor,
-        'nombre_vendedor': nombre_vendedor
+    return render(request, "vendedores/recargas.html", {
+        "vendedores": vendedores,
+        "recargas": recargas,
+        "id_vendedor": id_vendedor,
+        "nombre_vendedor": nombre_vendedor,
+        "fecha_inicio": fecha_inicio,
+        "fecha_fin": fecha_fin,
+        "total": total,
     })

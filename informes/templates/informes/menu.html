@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Informes{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Generar Informes</h1>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <a href="{% url 'informe_ventas' %}" class="btn btn-outline-primary w-100 p-4">
+                Informe de Ventas
+            </a>
+        </div>
+        <div class="col-md-6 mb-3">
+            <a href="{% url 'reporte_final_dia' %}" class="btn btn-outline-success w-100 p-4">
+                Reporte Final Día
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
